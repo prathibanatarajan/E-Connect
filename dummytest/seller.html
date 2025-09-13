@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>E-Connect — Seller</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body { font-family:'Segoe UI',sans-serif; background:#f0fff4; padding:20px; }
+    .card { max-width:500px; margin:50px auto; background:#fff; padding:30px; border-radius:16px; box-shadow:0 12px 25px rgba(0,0,0,0.15); }
+    h2 { color:#28a745; margin-bottom:20px; text-align:center; }
+    input, textarea { width:100%; padding:12px; margin:8px 0; border-radius:12px; border:1px solid #ccc; }
+    button { width:100%; padding:12px; border:none; border-radius:12px; background:linear-gradient(90deg,#28a745,#007BFF); color:#fff; font-size:16px; cursor:pointer; margin-top:10px; }
+    button:hover { transform:translateY(-2px); }
+    .small { font-size:12px; color:#555; margin-top:6px; }
+  </style>
+</head>
+<body>
+
+  <div class="card">
+    <h2>Seller — Submit E-Waste</h2>
+    <form id="sellerForm">
+      <input id="sellerName" placeholder="Name" required />
+      <input id="sellerPhone" placeholder="Phone" required />
+      <input id="sellerProduct" placeholder="Product (e.g. Mobile, Fridge)" required />
+      <input id="sellerQuantity" type="number" placeholder="Quantity" min="1" value="1" required />
+      <textarea id="sellerAddress" placeholder="Address (full)"></textarea>
+      <input id="sellerDate" type="date" />
+      <input id="sellerImage" type="file" accept="image/*" />
+      <button type="submit">Submit</button>
+      <div id="sellerMessage" class="small"></div>
+    </form>
+  </div>
+
+  <script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
+  import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
+  import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-storage.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBmSgmm9fRhc3RTk0MlIH0JVljM3-k4K60",
+    authDomain: "e-waste-collector-48321.firebaseapp.com",
+    projectId: "e-waste-collector-48321",
+    storageBucket: "e-waste-collector-48321.appspot.com",
+    messagingSenderId: "286213543436",
+    appId: "1:286213543436:web:4bcea05421a0614b8f8029"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  const storage = getStorage(app);
+
+  const sellerForm = document.getElementById('sellerForm');
+  const sellerMessage = document.getElementById('sellerMessage');
+
+  sellerForm.addEventListener('submit', async e => {
+    e.preventDefault();
+    try {
+      const name = document.getElementById('sellerName').value.trim();
+      const phone = document.getElementById('sellerPhone').value.trim();
+      const product = document.getElementById('sellerProduct').value.trim();
+      const quantity = parseInt(document.getElementById('sellerQuantity').value) || 1;
+      const address = document.getElementById('sellerAddress').value.trim();
+      const date = document.getElementById('sellerDate').value || new Date().toISOString().slice(0,10);
+
+      let imageUrl = null;
+      const fileInput = document.getElementById('sellerImage');
+      if(fileInput.files.length){
+        const f = fileInput.files[0];
+        const filename = `${Date.now()}_${f.name}`;
+        const storageRef = ref(storage, `seller_images/${filename}`);
+        const snap = await uploadBytes(storageRef, f);
+        imageUrl = await getDownloadURL(snap.ref);
+      }
+
+      await addDoc(collection(db,"ewaste_sellers"),{
+        name, phone, product, quantity, address, date,
+        imageUrl, status:"Pending", createdAt:serverTimestamp()
+      });
+
+      sellerMessage.textContent = "Submitted! Your e-waste will be picked up in 7 days";
+      sellerForm.reset();
+    } catch(err){
+      sellerMessage.textContent = "Error: "+(err.message || err);
+      console.error(err);
+    }
+  });
+  </script>
+
+</body>
+</html>
+

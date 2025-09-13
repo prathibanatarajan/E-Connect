@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>E-Connect — Login</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    /* ---------- Body & Container ---------- */
+    body {
+      background: linear-gradient(to bottom right, #e8f5e9, #f0fff4);
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 20px;
+      min-height: 100vh;
+    }
+
+    .container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 30px;
+      min-height: 100vh;
+      width: 100%;
+    }
+
+    /* ---------- Header ---------- */
+    header {
+      text-align: center;
+    }
+
+    header h1 {
+      color: black;
+      font-size: 32px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+      margin: 0;
+    }
+
+    header p {
+      margin: 5px 0 0 0;
+      font-size: 16px;
+      color: #555;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    header i {
+      animation: spin 4s linear infinite;
+      color: #28a745;
+    }
+
+    /* ---------- Card ---------- */
+    .card {
+      background: #fff;
+      padding: 30px;
+      border-radius: 16px;
+      box-shadow: 0 12px 25px rgba(0,0,0,0.15);
+      text-align: center;
+      max-width: 400px;
+      width: 100%;
+    }
+
+    h2 {
+      color: #28a745;
+      margin-bottom: 20px;
+    }
+
+    /* ---------- Buttons ---------- */
+    .btn {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      font-size: 14px;
+      background: linear-gradient(90deg, #28a745, #007BFF);
+      color: #fff;
+      margin: 5px 0;
+      width: 100%;
+      transition: background 0.3s, transform 0.2s;
+    }
+
+    .btn:hover {
+      background: linear-gradient(90deg, #20c04b, #0069d9);
+      transform: translateY(-2px);
+    }
+
+    .btn.secondary {
+      background: #6c757d;
+    }
+
+    /* ---------- Inputs ---------- */
+    input {
+      width: 100%;
+      padding: 12px;
+      margin: 8px 0;
+      border-radius: 12px;
+      border: 1px solid #ccc;
+      font-size: 14px;
+      transition: border 0.3s, box-shadow 0.3s;
+    }
+
+    input:focus {
+      border-color: #28a745;
+      box-shadow: 0 0 10px rgba(40,167,69,0.2);
+      outline: none;
+    }
+
+    .small {
+      font-size: 12px;
+      color: #555;
+      margin-top: 8px;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .role-btns button {
+      margin: 10px 5px;
+    }
+
+    @media(max-width:450px){
+      .card { padding:20px; }
+      header h1 { font-size:26px; }
+    }
+
+  </style>
+</head>
+<body>
+
+  <div class="container">
+
+    <!-- Website Header -->
+    <header>
+      <h1><i class="fas fa-recycle"></i> E-Connect</h1>
+      <p>Smarter E-Waste Management</p>
+    </header>
+
+    <!-- Login Card -->
+    <div class="card">
+
+      <!-- Role Selection -->
+      <div id="roleSelection">
+        <h2>Select Your Role</h2>
+        <div class="role-btns">
+          <button class="btn" onclick="chooseRole('seller')">I am a Seller</button>
+          <button class="btn" onclick="chooseRole('buyer')">I am a Buyer</button>
+          </div>
+      </div>
+
+      <!-- Login Form -->
+      <div id="loginForm" class="hidden">
+        <h2 id="roleTitle">Login</h2>
+        <input type="text" id="username" placeholder="Email or Username">
+        <input type="password" id="password" placeholder="Password">
+        <button class="btn" onclick="submitLogin()">Login</button>
+        <div class="small" id="loginMessage"></div>
+        <button class="btn secondary" style="margin-top:12px;" onclick="backToRole()">Back</button>
+      </div>
+
+    </div>
+  </div>
+  <script>
+    let selectedRole = '';
+
+    const credentials = {
+      seller: {username:'lathighas@gmail.com', password:'hack123', page:'seller.html'},
+      buyer: {username:'prathibanatarajan@gmail.com', password:'hack123', page:'buyer.html'},
+      admin: {username:'admin@example.com', password:'123', page:'admin.html'}
+    };
+
+    function chooseRole(role){
+      selectedRole = role;
+      document.getElementById('roleSelection').classList.add('hidden');
+      document.getElementById('loginForm').classList.remove('hidden');
+      document.getElementById('roleTitle').textContent = role.charAt(0).toUpperCase() + role.slice(1) + " Login";
+      document.getElementById('username').value = '';
+      document.getElementById('password').value = '';
+      document.getElementById('loginMessage').textContent = '';
+    }
+
+    function backToRole(){
+      document.getElementById('roleSelection').classList.remove('hidden');
+      document.getElementById('loginForm').classList.add('hidden');
+    }
+
+    function submitLogin(){
+      const user = document.getElementById('username').value.trim();
+      const pass = document.getElementById('password').value.trim();
+      const cred = credentials[selectedRole];
+
+      if(user === cred.username && pass === cred.password){
+        window.location.href = cred.page;
+      } else {
+        document.getElementById('loginMessage').textContent = 'Invalid username or password';
+      }
+    }
+
+    // Preselect role if coming from landing page
+    const urlParams = new URLSearchParams(window.location.search);
+    const preRole = urlParams.get('role');
+    if(preRole && ['seller','buyer','admin'].includes(preRole)){
+      chooseRole(preRole);
+    }
+  </script>
+
+</body>
+</html>

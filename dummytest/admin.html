@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>E-Connect — Admin Dashboard</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body { font-family:'Segoe UI',sans-serif; background:#f0fff4; padding:20px; }
+    h2 { color:#28a745; text-align:center; margin-bottom:20px; }
+    .container { max-width:1000px; margin:0 auto; display:flex; gap:20px; flex-wrap:wrap; justify-content:center; }
+    .card { background:#fff; border-radius:16px; padding:20px; box-shadow:0 12px 25px rgba(0,0,0,0.15); flex:1 1 400px; min-width:300px; }
+    .card.small { margin-bottom:12px; padding:10px; }
+    .thumb { width:80px; height:80px; object-fit:cover; margin-top:6px; border-radius:8px; }
+    select, button { padding:6px; margin-top:6px; border-radius:8px; border:1px solid #ccc; cursor:pointer; }
+    button { background:linear-gradient(90deg,#28a745,#007BFF); color:#fff; border:none; transition:transform 0.2s; }
+    button:hover { transform:translateY(-2px); }
+    .secondary { background:#6c757d; color:#fff; }
+    .small { font-size:12px; color:#555; }
+    .flex { display:flex; gap:6px; flex-wrap:wrap; }
+  </style>
+</head>
+<body>
+
+  <h2>Admin Dashboard — Sellers & Buyers</h2>
+  <div class="container">
+    <div class="card">
+      <h3>Sellers</h3>
+      <div id="sellersList" class="small">Loading sellers…</div>
+    </div>
+    <div class="card">
+      <h3>Buyers</h3>
+      <div id="buyersList" class="small">Loading buyers…</div>
+    </div>
+  </div>
+
+  <script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
+  import { getFirestore, collection, addDoc, getDocs, onSnapshot, query, orderBy, doc, updateDoc, where, limit, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBmSgmm9fRhc3RTk0MlIH0JVljM3-k4K60",
+    authDomain: "e-waste-collector-48321.firebaseapp.com",
+    projectId: "e-waste-collector-48321",
+    storageBucket: "e-waste-collector-48321.appspot.com",
+    messagingSenderId: "286213543436",
+    appId: "1:286213543436:web:4bcea05421a0614b8f8029"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  const sellersList = document.getElementById('sellersList');
+  const buyersList = document.getElementById('buyersList');
+  let buyersCache=[];
+
+  // Fetch buyers
+  onSnapshot(query(collection(db,"ewaste_buyers"),orderBy('createdAt','desc')),(snap)=>{
+    buyersCache=[];
+    buyersList.innerHTML='';
+    snap.forEach(docSnap=>{
+      const d=docSnap.data();
+      buyersCache.push({id:docSnap.id,...d});
+      const el=document.createElement('div');
+      el.className='card small';
+      el.innerHTML=`<strong>${d.name}</strong><div class="small">${d.area}</div><div class="small">${d.description}</div>`;
+      buyersList.appendChild(el);
+    });
+    if(!snap.size) buyersList.textContent="No buyers registered yet";
+  });
+
+  // Fetch sellers
+  onSnapshot(query(collection(db,"ewaste_sellers"),orderBy('createdAt','desc')),(snap)=>{
+    sellersList.innerHTML='';
+    if(!snap.size){ sellersList.textContent="No seller requests yet"; return; }
+    snap.forEach(docSnap=>{
+      const docId = docSnap.id;
+      const d = docSnap.data();
+      const card = document.createElement('div');
+      card.className='card small';
+      const imgHtml = d.imageUrl ? `<img class="thumb" src="${d.imageUrl}" alt="product"/>` : '';
+      card.innerHTML=`
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div><strong>${d.name}</strong> — <span class="small">${d.product} (x${d.quantity})</span></div>
+          <div class="small">Status: <strong>${d.status || 'Pending'}</strong></div>
+        </div>
+        <div class="small">${d.address || ''}</div>
+        ${imgHtml}
+        <div style="margin-top:8px">
+          <label class="small">Assign to buyer:</label>
+          <select id="assignBuyer_${docId}"></select>
+          <div class="flex">
+            <button onclick="assignBuyer('${docId}')">Assign</button>
+            <button class="secondary" onclick="updateSellerStatus('${docId}','Collected')">Mark Collected</button>
+            <button class="secondary" onclick="updateSellerStatus('${docId}','Recycled')">Mark Recycled</button>
+          </div>
+        </div>
+      `;
+      sellersList.appendChild(card);
+
+      const sel=document.getElementById(`assignBuyer_${docId}`);
+      sel.innerHTML='<option value="">-- choose buyer --</option>';
+      buyersCache.forEach(b=>{
+        const opt=document.createElement('option');
+        opt.value=b.id;
+        opt.textContent=`${b.name} — ${b.area}`;
+        sel.appendChild(opt);
+      });
+    });
+  });
+
+  window.assignBuyer = async function(sellerId){
+    try {
+      const sel=document.getElementById(`assignBuyer_${sellerId}`);
+      const buyerId = sel.value;
+      if(!buyerId){ alert('Pick a buyer first'); return; }
+      await updateDoc(doc(db,'ewaste_sellers',sellerId), { status:'Assigned', assignedTo:buyerId });
+      alert('Assigned successfully');
+    } catch(err){ console.error(err); alert('Error: '+err.message); }
+  }
+
+  window.updateSellerStatus = async function(sellerId,newStatus){
+    try{
+      await updateDoc(doc(db,'ewaste_sellers',sellerId),{ status:newStatus });
+      alert('Status updated to '+newStatus);
+    } catch(err){ console.error(err); alert('Error updating status: '+err.message); }
+  }
+  </script>
+
+</body>
+</html>
